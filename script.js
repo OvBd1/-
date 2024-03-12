@@ -1,62 +1,81 @@
-const container = document.querySelector('.container')
-const pays = document.querySelector('.country')
-const img = document.querySelector('img')
+const country = document.querySelector('.country-name')
+const flag = document.querySelector('.flag')
 const input = document.querySelector('input')
-const rollBtn = document.querySelector('.rollBtn')
-const answerBtn = document.querySelector('.answerBtn')
-const answer = document.querySelector('.answer')
-let score = 0
- 
-const key = 'e6XRsAO2xOhGrWBV1uWzqtVPnCJI1DQYzwVin4q9'
- 
-function getRandomCountry() {
-    axios.get(`https://countryapi.io/api/all?apikey=${key}`)
-        .then(response => {
-            const countries = response.data;
-            const tableau = Object.keys(countries).map(key => countries[key])  
-   
-            const randomCountry = Math.floor(Math.random() * tableau.length);
-            const arrayCountries = tableau[randomCountry]
-            const countryName = arrayCountries.name
-            const countryFlag = arrayCountries.flag.medium
-            const capital = arrayCountries.capital
-            answer.textContent = ""
- 
-           
-           
-            console.log(compareResult(capital))
- 
- 
- 
-   
-            pays.textContent = countryName
-            img.src = countryFlag    
-        })
-        .catch(error => {
-            console.error("Erreur lors de la récupération des pays:", error);
-        });
+const scoreZone = document.querySelector('.score')
+const verdict = document.querySelector('.verdict')
+const submit = document.querySelector('.submit')
+const next = document.querySelector('.next')
+
+const key = '44nmBgtT9PMvyzLMPvmUoMzjNyZ7Fy82J72OmFio'
+
+const url = `https://countryapi.io/api/all?apikey=${key}`
+
+// Chargement initial du Quiz
+window.addEventListener('DOMContentLoaded', displayQuiz)
+
+// Ma fonction d'affichage et de lancement du Quiz avec la requete API
+function displayQuiz() {
+    fetch(url)
+    .then(res => res.json())
+    .then(data => {
+        console.log(data)
+
+        // On initialise score et round
+        let score = 0
+        let round = 1
+    
+        // On affiche le score et le round au début
+        scoreZone.textContent = `Round ${round} : ${score} / 10`
+
+        // Je crée un tableau avec les keys de notre objet data
+        const countryArray = Object.keys(data)
+
+        generateQuestion(countryArray, data, round, score)
+    
+    })
+    .catch(err => console.log(err))
 }
- 
-rollBtn.addEventListener('click', getRandomCountry);
- 
-document.addEventListener('DOMContentLoaded', getRandomCountry)
- 
- 
-function compareResult(capital) {
- 
-    answerBtn.addEventListener('click', () => {
-        console.log(input.value + capital)
-        if(input.value === capital){
-            answer.textContent = "Bonne Réponse"
-            let score
-           
+
+function generateQuestion(countryArray, data, round, score) {
+    // On génére un chiffre aléatoire entre 0 et 250
+    const randomIndex = Math.floor(Math.random() * countryArray.length)
+
+    // À l'aide de notre index aléatoire on recup un code pays aléatoirement
+    const randomCode  =countryArray[randomIndex] 
+
+    // On recup un pays aléatoirement et toutes ses informations
+    const randomCountry = data[randomCode]
+    
+    country.textContent = randomCountry.name 
+    flag.src = randomCountry.flag.medium
+
+    submit.addEventListener('click', () => {
+        checkAnswer(randomCountry)
+
+        if (checkAnswer(randomCountry) === true) {
+            score++
+            scoreZone.textContent = `Round ${round} : ${score} / 10`
+        }
+    })
+
+    next.addEventListener('click', () => {
+        round++
+        scoreZone.textContent = `Round ${round} : ${score} / 10`
+        // Si on est pas encore au round 10 on regenere une question
+        if (round <= 10) {
+            generateQuestion(countryArray, data, round, score)
         } else {
-            console.log('non')
-            answer.textContent = "Mauvaise Réponse"
+            verdict.textContent = `Vous avez terminé le quiz ! Votre score est de ${score} / 10`
         }
     })
 }
- 
-window.addEventListener('keypress', (e) => {
-    answerBtn.click()
-})
+
+function checkAnswer(country) {
+    if (input.value.trim().toLowerCase() === country.capital.trim().toLowerCase()) {
+        verdict.textContent = "Bonne réponse !"
+        return true
+    } else {
+        verdict.textContent = `Mauvaise réponse ... La réponse était ${country.capital}`
+        return false
+    }
+}
